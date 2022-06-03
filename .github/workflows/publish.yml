@@ -11,7 +11,7 @@ jobs:
     - name: build
       run: |
         pip install commonmark
-        '{"site_url": "https://simonm3.github.io/makesite/"}' > params.json
+        echo '{"site_url": "https://simonm3.github.io/makesite/"}' > params.json
         make
         touch _site/.nojekyll
         ls ${{ github.workspace }}/_site
