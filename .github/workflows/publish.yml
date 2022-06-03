@@ -11,6 +11,7 @@ jobs:
     - name: build
       run: |
         make
+        touch .nojekyll
         ls ${{ github.workspace }}/_site
     
     - name: publish
