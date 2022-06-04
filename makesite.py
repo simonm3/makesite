@@ -176,7 +176,7 @@ def main():
     params = {
         'subtitle': 'Lorem Ipsum',
         'author': 'Admin',
-        'site_url': 'http://localhost:8000',
+        'site_url': 'http://localhost:8000/',
         'current_year': datetime.datetime.now().year
     }
 
