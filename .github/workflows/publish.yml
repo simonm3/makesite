@@ -11,10 +11,9 @@ jobs:
     - name: build
       run: |
         pip install commonmark
-        echo '{"base_path": "", "site_url": "https://simonm3.github.io/makesite/"}' > params.json
+        echo '{"base_path": "", "site_url": "https://simonm3.github.io/makesite"}' > params.json
         make
         touch _site/.nojekyll
-        ls ${{ github.workspace }}/_site
     
     - name: publish
       uses: tsunematsu21/actions-publish-gh-pages@v1.0.2 
