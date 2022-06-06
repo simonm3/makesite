@@ -1,5 +1,5 @@
 site:
-	./makesite.py
+	python makesite.py
 
 serve: site
 	if python3 -c 'import http.server' 2> /dev/null; then \

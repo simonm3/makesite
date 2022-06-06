@@ -185,7 +185,7 @@ overview of what it does, here are the details:
     Another interesting thing to note is that a content file can
     override these parameters by defining its own parameters in the
     content header. For example, take a look at the content file for
-    the [home page](content/_index.html). In its content header, i.e.,
+    the [home page](content/index.html). In its content header, i.e.,
     the HTML comments at the top with key-value pairs, it defines a new
     parameter named `title` and overrides the `subtitle` parameter.
 
