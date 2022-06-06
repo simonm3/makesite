@@ -1,7 +1,8 @@
-<!-- title: Lorem Ipsum -->
-<!-- subtitle: Dolor Sit -->
-<h1>Lorem Ipsum</h1>
-<p>
+---
+title: Lorem Ipsum
+---
+# Lorem Ipsum
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc nibh
 tellus, vehicula ut maximus sed, fringilla a justo. Nunc vitae efficitur
 nisl. Ut sapien erat, pretium et commodo nec, rutrum bibendum magna. Sed
@@ -10,8 +11,7 @@ Aliquam porta venenatis bibendum. Nam id varius nulla. Sed vitae purus
 ac odio ornare vestibulum vitae tempor arcu. Nunc non venenatis purus.
 Duis a augue at nulla congue egestas. Morbi mattis felis sit amet tortor
 euismod, fringilla viverra est elementum.
-</p>
-<p>
+
 Suspendisse vestibulum sed massa eu tincidunt. Pellentesque cursus, nisl
 at gravida suscipit, odio quam placerat mi, in iaculis nunc risus eu
 sapien. Suspendisse potenti. Nullam fermentum, tellus vel faucibus
@@ -25,4 +25,3 @@ maximus. Donec metus massa, scelerisque a lacinia et, viverra eget
 metus. Aenean vitae tellus vehicula, mattis metus in, facilisis purus.
 In purus erat, fringilla ut diam et, convallis convallis nunc. Morbi
 sagittis interdum ipsum sit amet fringilla.
-</p>

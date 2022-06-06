@@ -10,8 +10,9 @@ jobs:
     
     - name: build
       run: |
-        pip install commonmark
-        echo '{"site_url": "https://simonm3.github.io/makesite/"}' > params.json
+        sudo apt-get update && apt-get install pandoc
+        pip install pandoc
+        echo '{"site_url": "https://simonm3.github.io/makesite"}' > params.json
         make
         touch .nojekyll
     

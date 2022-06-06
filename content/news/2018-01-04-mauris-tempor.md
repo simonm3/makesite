@@ -1,13 +1,13 @@
-<!-- title: Mauris Tempor -->
-<p>
+---
+title: Mauris Tempor
+---
 Mauris tempor nulla odio, vel tempus metus bibendum sit amet. Vivamus
 consequat fringilla tristique. Nullam a congue ligula, eget rutrum
 lectus. In pulvinar at nunc ac finibus. Sed cursus consequat sem et
 egestas. Cras eu eros vel mi eleifend efficitur eu dapibus orci.
 Phasellus non bibendum purus. Nam facilisis laoreet massa tempus
 vehicula. Donec a hendrerit nisi.
-</p>
-<p>
+
 Vestibulum blandit dui a lorem pulvinar, et auctor eros elementum.
 Vestibulum tortor ex, pharetra id metus vel, tincidunt faucibus nisl.
 Suspendisse potenti. Nam maximus est mi, sit amet tristique nisi pretium
@@ -21,8 +21,7 @@ Vestibulum quam enim, finibus et magna ac, pellentesque aliquet leo.
 Nullam condimentum neque nec ex viverra, sit amet ullamcorper lectus
 sodales. Suspendisse non est et velit malesuada ullamcorper maximus
 porta quam.
-</p>
-<p>
+
 Cras ornare maximus augue nec varius. Aliquam tincidunt sodales ipsum.
 Sed viverra ut nibh sit amet porta. Cras sit amet condimentum est.
 Suspendisse quis tristique ipsum. Etiam vel lorem bibendum, laoreet dui
@@ -34,4 +33,3 @@ amet. Integer et cursus lacus. Nullam id arcu et libero condimentum
 tristique. Pellentesque arcu magna, aliquam sed lectus in, tempor mattis
 erat. Curabitur vel massa sit amet nunc suscipit pulvinar. In tincidunt
 diam metus, eu sollicitudin velit commodo a.
-</p>

@@ -49,7 +49,6 @@ class MainTest(unittest.TestCase):
     def test_json_params(self):
         params = {
             'base_path': '/base',
-            'subtitle': 'Foo',
             'author': 'Bar',
             'site_url': 'http://localhost/base'
         }
