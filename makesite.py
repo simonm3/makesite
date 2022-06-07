@@ -170,24 +170,3 @@ _test = None
 
 if __name__ == "__main__":
     main()
-
-"""
-Orisson
-Zubiri
-
-after zubiri
-    Zariquiegui (before the hill)
-    Uterga (after Camino do Perdon)
-    Cirauqui
-    Navarrete (las estrellas)
-    Ciruena
-    Granon (San Juan)
-    Tosantos
-    Villambistia
-    San Juan de Ortega
-
-after burgos
-    Hornillos
-    Castrojeriz
-    Trabadelo
-"""
