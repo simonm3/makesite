@@ -7,12 +7,12 @@ serve: site
 venv2:
 	virtualenv ~/.venv/makesite
 	echo . ~/.venv/makesite/bin/activate > venv
-	. ./venv && pip install commonmark coverage
+	. ./venv && pip install pandoc coverage
 
 venv: FORCE
 	python3 -m venv ~/.venv/makesite
 	echo . ~/.venv/makesite/bin/activate > venv
-	. ./venv && pip install commonmark coverage
+	. ./venv && pip install pandoc coverage
 
 test: FORCE
 	. ./venv && python -m unittest -bv

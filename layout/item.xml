@@ -1,12 +1,12 @@
 <item>
 <title>{{ title }}</title>
-<link>{{ site_url }}/{{ outpath }}/</link>
+<link>{{ site_url }}/{{ relpath }}/</link>
 <description>
 <![CDATA[
 <p>
-{{ summary }}&nbsp;<a href="{{ site_url }}/{{ outpath }}/">...</a>
+{{ summary }}&nbsp;<a href="{{ site_url }}/{{ relpath }}/">...</a>
 </p>
-<p><a href="{{ site_url }}/{{ outpath }}/">Read More</a></p>
+<p><a href="{{ site_url }}/{{ relpath }}/">Read More</a></p>
 ]]>
 </description>
 <pubDate>{{ rfc_2822_date }}</pubDate>
