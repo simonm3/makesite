@@ -10,7 +10,8 @@ jobs:
     
     - name: build
       run: |
-        sudo apt-get update && apt-get install pandoc
+        sudo apt-get update
+        sudo apt-get install pandoc
         pip install pandoc
         echo '{"site_url": "https://simonm3.github.io/makesite"}' > params.json
         make
