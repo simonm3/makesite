@@ -1,13 +1,13 @@
-"""Make static website/blog with Python."""
+"""Make static website with Python."""
 
 import os
 import shutil
 import re
-import glob
-import sys
+from glob import glob
 import json
 from datetime import datetime
 import pandoc
+from pandoc.types import Pandoc, Meta, Para
 import logging
 from defaultlog import log
 
@@ -36,43 +36,10 @@ def fwrite(path, text):
         f.write(text)
 
 
-def truncate(text, words=25):
-    """Remove tags and truncate text to the specified number of words."""
-    return " ".join(re.sub("(?s)<.*?>", " ", text).split()[:words])
-
-
 def rfc_2822_format(date_str):
     """Convert yyyy-mm-dd date string to RFC 2822 format date string."""
     d = datetime.strptime(date_str, "%Y-%m-%d")
     return d.strftime("%a, %d %b %Y %H:%M:%S +0000")
-
-
-def read_page(path):
-    getmeta = lambda doc: {k: pandoc.write(v[0]).strip() for k, v in doc[0][0].items()}
-
-    # path metadata
-    basename = os.path.basename(path)
-    date_slug, ext = os.path.splitext(basename)
-    last_modified = os.stat(path).st_mtime
-    last_modified = datetime.fromtimestamp(last_modified).strftime("%Y-%m-%d")
-    match = re.search(r"^(?:(\d\d\d\d-\d\d-\d\d)-)?(.+)$", date_slug)
-    page = {
-        "date": match.group(1) or last_modified,
-        "slug": match.group(2),
-        "path": path,
-    }
-
-    # page
-    text = fread(path)
-    text = pandoc.read(text, format=ext2format[ext])
-    page["pandoc"] = text
-
-    # page metadata
-    page.update(getmeta(text))
-    page.setdefault("title", page["slug"])
-    page["rfc_2822_date"] = rfc_2822_format(page["date"])
-
-    return page
 
 
 def render(template, **params):
@@ -82,6 +49,35 @@ def render(template, **params):
         lambda match: str(params.get(match.group(1), match.group(0))),
         template,
     )
+
+
+def read_page(path):
+    getmeta = lambda doc: {k: pandoc.write(v[0]).strip() for k, v in doc[0][0].items()}
+
+    basename = os.path.basename(path)
+    date_title, ext = os.path.splitext(basename)
+    if ext not in ext2format.keys():
+        log.warning(f"Unsupported file format: {path}")
+        return None
+
+    # path metadata
+    last_modified = os.stat(path).st_mtime
+    last_modified = datetime.fromtimestamp(last_modified).strftime("%Y-%m-%d")
+    match = re.search(r"^(?:(\d\d\d\d-\d\d-\d\d)-)?(.+)$", date_title)
+    page = {
+        "date": match.group(1) or last_modified,
+        "title": match.group(2),
+        "path": path,
+    }
+
+    # page
+    page["pandoc"] = pandoc.read(file=path, format=ext2format[ext])
+
+    # page metadata
+    page.update(getmeta(page["pandoc"]))
+    page["rfc_2822_date"] = rfc_2822_format(page["date"])
+
+    return page
 
 
 def write_page(page, layout, **params):
@@ -100,18 +96,24 @@ def write_page(page, layout, **params):
     return output
 
 
-def make_list(pages, dst, list_layout, item_layout, **params):
-    """Generate list page for a blog."""
+def write_index(pages, dst, list_layout, item_layout, **params):
+    """Generate index page"""
     items = []
     for page in pages:
         item_params = dict(params, **page)
-        item_params["summary"] = truncate(page["content"])
+        try:
+            # summary = first para, first 100 tokens
+            summary = [x for x in page["pandoc"][1] if isinstance(x, Para)][0][0][:100]
+            summary = Para(summary)
+            item_params["summary"] = pandoc.write(summary, format="html")
+        except IndexError:
+            item_params["summary"] = ""
         item = render(item_layout, **item_params)
         items.append(item)
 
     output = render(list_layout, content="".join(items), **params)
 
-    log.info(f"Rendering list => {dst} ...")
+    log.info(f"Rendering index => {dst} ...")
     fwrite(dst, output)
 
 
@@ -133,51 +135,53 @@ def main():
     feed_xml = fread("layout/feed.xml")
     item_xml = fread("layout/item.xml")
 
-    # Combine layouts to form final layouts.
+    # build layouts
+    cats = [os.path.basename(c) for c in glob("content/*") if os.path.isdir(c)]
+    menu = [f"<a href={category}>{category.capitalize()}</a>" for category in cats]
+    menu = "\n".join(menu)
+    page_layout = render(page_layout, menu=menu)
     post_layout = render(page_layout, content=post_layout)
     list_layout = render(page_layout, content=list_layout)
 
     # root pages (not indexed; page_layout)
-    for src in [f for f in glob.glob("content/*") if os.path.isfile(f)]:
-        if os.path.splitext(src)[1] not in ext2format.keys():
-            log.warning(f"Unsupported file format: {src}")
-            continue
+    for src in [f for f in glob("content/*") if os.path.isfile(f)]:
         page = read_page(src)
+        if page is None:
+            continue
         write_page(page, page_layout, **params)
 
-    # categories (indexed)
-    for blog in [f for f in glob.glob("content/*") if os.path.isdir(f)]:
+    # categories (indexed; post_layout)
+    for category in [f for f in glob("content/*") if os.path.isdir(f)]:
         # pages
         pages = []
-        for src in glob.glob(f"{blog}/*"):
-            if os.path.splitext(src)[1] not in ext2format.keys():
-                log.warning(f"Unsupported file format: {src}")
-                continue
+        for src in glob(f"{category}/*"):
             page = read_page(src)
+            if page is None:
+                continue
             write_page(page, post_layout, **params)
             pages.append(page)
 
         # index
         pages = sorted(pages, key=lambda x: x["date"], reverse=True)
-        outpath = blog.replace("content", "_site")
-        blog = os.path.basename(blog)
-        make_list(
+        outpath = category.replace("content", "_site")
+        category = os.path.basename(category)
+        write_index(
             pages,
             f"{outpath}/index.html",
             list_layout,
             item_layout,
-            blog=blog,
-            title=blog,
+            category=category,
+            title=category,
             **params,
         )
-        # rss feeds
-        make_list(
+        # rss feed
+        write_index(
             pages,
             f"{outpath}/rss.xml",
             feed_xml,
             item_xml,
-            blog=blog,
-            title=blog,
+            category=category,
+            title=category,
             **params,
         )
 
