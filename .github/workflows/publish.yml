@@ -14,7 +14,7 @@ jobs:
         sudo apt-get install pandoc
         pip install pandoc
         export MAKESITE_URL="https://simonm3.github.io/makesite/"
-        make
+        make build
         touch .nojekyll
     
     - name: publish
