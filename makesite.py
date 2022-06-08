@@ -81,6 +81,33 @@ class Page:
         return output
 
 
+class Layouts:
+    def __setitem__(self, k, v):
+        setattr(self, k, v)
+
+    def __getitem__(self, k):
+        return getattr(self, k)
+
+    def load(self):
+        for path in glob("layout/*"):
+            x = os.path.basename(path)
+            name, ext = os.path.splitext(x)
+            name = name if ext == ".html" else name + ext.lstrip(".")
+            self[name] = fread(path)
+
+    def build(self):
+        cats = [
+            os.path.basename(c)
+            for c in glob("content/**", recursive=True)
+            if os.path.isdir(c)
+        ]
+        menu = [f"<a href={category}>{category.capitalize()}</a>" for category in cats]
+        menu = "\n".join(menu)
+        self.page = render(self.page, menu=menu)
+        self.post = render(self.page, content=self.post)
+        self.list = render(self.page, content=self.list)
+
+
 def write_index(items, dst, list_layout, item_layout, **context):
     """Generate index page"""
     items = [render(item_layout, **dict(context, **item)) for item in items]
@@ -104,33 +131,10 @@ def main():
     context["site_url"] = os.environ.get("MAKESITE_URL", "http://localhost:8000/")
     context["current_year"] = datetime.now().year
 
-    # Load layouts
-    class Layouts:
-        def __init__(self):
-            for x in glob("layout/*"):
-                x = os.path.basename(x)
-                name, ext = os.path.splitext(x)
-                name = name if ext==".html" else name + ext.lstrip(".")
-                self[name] = fread(x)
-
-    page_layout = fread("layout/page.html")
-    post_layout = fread("layout/post.html")
-    list_layout = fread("layout/list.html")
-    item_layout = fread("layout/item.html")
-    feed_xml = fread("layout/feed.xml")
-    item_xml = fread("layout/item.xml")
-
-    # build layouts
-    cats = [
-        os.path.basename(c)
-        for c in glob("content/**", recursive=True)
-        if os.path.isdir(c)
-    ]
-    menu = [f"<a href={category}>{category.capitalize()}</a>" for category in cats]
-    menu = "\n".join(menu)
-    page_layout = render(page_layout, menu=menu)
-    post_layout = render(page_layout, content=post_layout)
-    list_layout = render(page_layout, content=list_layout)
+    # create layouts
+    layouts = Layouts()
+    layouts.load()
+    layouts.build()
 
     # write content pages
     cats = defaultdict(list)
@@ -140,13 +144,12 @@ def main():
         except:
             log.exception(f"failed to read {src}")
             continue
-        paths = os.path.relpath(src, "content").split("/")
         if page.meta["category"] is None:
             # root pages
-            page.write(page_layout, **context)
+            page.write(layouts.page, **context)
         else:
             # category pages use post layout and add meta to category index.
-            page.write(post_layout, **context)
+            page.write(layouts.post, **context)
             cats[page.meta["category"]].append(page.meta)
 
     # write category index pages and rss
@@ -155,15 +158,15 @@ def main():
         write_index(
             items,
             f"_site/{category}/index.html",
-            list_layout,
-            item_layout,
+            layouts.list,
+            layouts.item,
             **dict(category=category, title=category, **context),
         )
         write_index(
             items,
             f"_site/{category}/rss.xml",
-            feed_xml,
-            item_xml,
+            layouts.feedxml,
+            layouts.itemxml,
             **dict(category=category, title=category, **context),
         )
 
@@ -173,8 +176,8 @@ def main():
     write_index(
         items,
         f"_site/index.html",
-        list_layout,
-        item_layout,
+        layouts.list,
+        layouts.item,
         **dict(title="Recent posts", **context),
     )
 
