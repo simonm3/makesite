@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+
+<channel>
+<title>Blog</title>
+<link>https://simonm3.github.io/makesite/</link>
+
+<item>
+<title>another title</title>
+<link>https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/"></a>
+</p>
+<p><a href="https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Fri, 03 Jun 2022 00:00:00 +0000</pubDate>
+</item>
+<item>
+<title>Sed Finibus</title>
+<link>https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/"></a>
+</p>
+<p><a href="https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Wed, 03 Jan 2018 00:00:00 +0000</pubDate>
+</item>
+<item>
+<title>Proin Quam</title>
+<link>https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/"></a>
+</p>
+<p><a href="https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
+</item>
+
+
+</channel>
+</rss>
