@@ -9,6 +9,7 @@ from collections import defaultdict
 import itertools
 import logging
 
+from tqdm.auto import tqdm
 import pandoc
 
 from defaultlog import log
@@ -34,7 +35,9 @@ def main():
 
     # content pages
     cats = defaultdict(list)
-    for src in [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]:
+    for src in tqdm(
+        [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]
+    ):
         try:
             page = Page(src)
         except:
@@ -168,7 +171,7 @@ def fread(path):
 def fwrite(output, dst):
     """ write file """
     dst = f"_site/{dst}"
-    log.info(f"Writing {dst}")
+    log.debug(f"Writing {dst}")
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     with open(dst, "w") as f:
         f.write(output)
