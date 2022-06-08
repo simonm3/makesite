@@ -16,19 +16,50 @@ from defaultlog import log
 log = logging.getLogger(__name__)
 
 
-def fread(path):
-    """Read file and close the file."""
-    with open(path, "r") as f:
-        return f.read()
+def main():
+    # initialise _site
+    if os.path.isdir("_site"):
+        shutil.rmtree("_site")
+    shutil.copytree("static", "_site")
 
+    # global context
+    gcontext = dict()
+    gcontext["site_url"] = os.environ.get("MAKESITE_URL", "http://localhost:8000/")
+    gcontext["current_year"] = datetime.now().year
 
-def render(template, **context):
-    """Replace placeholders in template with values from context."""
-    return re.sub(
-        r"{{\s*([^}\s]+)\s*}}",
-        lambda match: str(context.get(match.group(1), match.group(0))),
-        template,
-    )
+    # create layouts
+    layouts = Layouts()
+    layouts.load()
+    layouts.build()
+
+    # content pages
+    cats = defaultdict(list)
+    for src in [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]:
+        try:
+            page = Page(src)
+        except:
+            log.exception(f"failed to read {src}")
+            continue
+        if os.path.dirname(src) == "content":
+            # root pages
+            page.write(layouts.page, **gcontext)
+        else:
+            # category pages use post layout and add meta to category index.
+            page.write(layouts.post, **gcontext)
+            cats[page.meta["category"]].append(page.meta)
+
+    # category index pages
+    index = Index(layouts)
+    for category, items in cats.items():
+        items = sorted(items, key=lambda item: item["date"], reverse=True)
+        index.write(
+            items, category, **dict(title=category.capitalize(), **gcontext),
+        )
+
+    # home index page
+    items = list(itertools.chain(*cats.values()))
+    items = sorted(items, key=lambda item: item["date"], reverse=True)[:10]
+    index.write(items, "", **dict(title="Recent posts", **gcontext))
 
 
 class Page:
@@ -69,24 +100,17 @@ class Page:
 
         return meta
 
-    def write(self, layout, **context):
+    def write(self, layout, **gcontext):
         relpath = self.meta["relpath"]
-        outpath = f"_site/{relpath}"
-        log.info(f"Rendering {self.path} => {outpath} ...")
         html = pandoc.write(self.pandoc, format="html")
-        output = render(layout, content=html, **dict(context, **self.meta))
-        os.makedirs(os.path.dirname(outpath), exist_ok=True)
-        with open(f"{outpath}", "w") as f:
-            f.write(output)
-        return output
+        context = dict(gcontext, content=html, **self.meta)
+        output = render(layout, **context)
+        fwrite(output, relpath)
 
 
 class Layouts:
     def __setitem__(self, k, v):
         setattr(self, k, v)
-
-    def __getitem__(self, k):
-        return getattr(self, k)
 
     def load(self):
         for path in glob("layout/*"):
@@ -108,85 +132,56 @@ class Layouts:
         self.list = render(self.page, content=self.list)
 
 
-def write_index(items, dst, list_layout, item_layout, **context):
-    """Generate index page"""
-    items = [render(item_layout, **dict(context, **item)) for item in items]
+class Index:
+    def __init__(self, layouts):
+        self.layouts = layouts
 
-    log.info(f"Rendering index => {dst} ...")
-    output = render(list_layout, content="".join(items), **context)
+    def write(self, items, path, **gcontext):
+        """Generate index page"""
+        lay = self.layouts
+        rsspath = "/".join([path, "rss.xml"])
+
+        # write index
+        items_out = [render(lay.item, **dict(gcontext, **item)) for item in items]
+        output = render(
+            lay.list, content="".join(items_out), rsspath=rsspath, **gcontext
+        )
+        fwrite(output, "/".join([path, "index.html"]))
+
+        # write rss
+        items_out = [render(lay.itemxml, **dict(gcontext, **item)) for item in items]
+        output = render(
+            lay.feedxml, content="".join(items_out), rsspath=rsspath, **gcontext
+        )
+        fwrite(output, rsspath)
+
+
+######################################################################
+
+
+def fread(path):
+    """Read file and close the file."""
+    with open(path, "r") as f:
+        return f.read()
+
+
+def fwrite(output, dst):
+    """ write file """
+    dst = f"_site/{dst}"
+    log.info(f"Writing {dst}")
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     with open(dst, "w") as f:
         f.write(output)
-    return output
 
 
-def main():
-    # initialise _site
-    if os.path.isdir("_site"):
-        shutil.rmtree("_site")
-    shutil.copytree("static", "_site")
-
-    # global context
-    context = dict()
-    context["site_url"] = os.environ.get("MAKESITE_URL", "http://localhost:8000/")
-    context["current_year"] = datetime.now().year
-
-    # create layouts
-    layouts = Layouts()
-    layouts.load()
-    layouts.build()
-
-    # write content pages
-    cats = defaultdict(list)
-    for src in [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]:
-        try:
-            page = Page(src)
-        except:
-            log.exception(f"failed to read {src}")
-            continue
-        if page.meta["category"] is None:
-            # root pages
-            page.write(layouts.page, **context)
-        else:
-            # category pages use post layout and add meta to category index.
-            page.write(layouts.post, **context)
-            cats[page.meta["category"]].append(page.meta)
-
-    # write category index pages and rss
-    for category, items in cats.items():
-        items = sorted(items, key=lambda item: item["date"], reverse=True)
-        write_index(
-            items,
-            f"_site/{category}/index.html",
-            layouts.list,
-            layouts.item,
-            **dict(category=category, title=category, **context),
-        )
-        write_index(
-            items,
-            f"_site/{category}/rss.xml",
-            layouts.feedxml,
-            layouts.itemxml,
-            **dict(category=category, title=category, **context),
-        )
-
-    # write index page
-    items = list(itertools.chain(*cats.values()))
-    items = sorted(items, key=lambda item: item["date"], reverse=True)[:5]
-    write_index(
-        items,
-        f"_site/index.html",
-        layouts.list,
-        layouts.item,
-        **dict(title="Recent posts", **context),
+def render(template, **context):
+    """Replace placeholders in template with values from context."""
+    return re.sub(
+        r"{{\s*([^}\s]+)\s*}}",
+        lambda match: str(context.get(match.group(1), match.group(0))),
+        template,
     )
 
 
 if __name__ == "__main__":
     main()
-
-
-"""
-layouts class
-combine xml and html
-"""

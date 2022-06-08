@@ -4,7 +4,7 @@
 <description>
 <![CDATA[
 <p>
-{{ summary }}&nbsp;<a href="{{ site_url }}/{{ relpath }}/">...</a>
+{{ summary }}&nbsp;<a href="{{ site_url }}/{{ relpath }}/"></a>
 </p>
 <p><a href="{{ site_url }}/{{ relpath }}/">Read More</a></p>
 ]]>
