@@ -1,8 +1,1 @@
 _site
-*.pyc
-__pycache__
-.coverage
-htmlcov
-*.sw?
-.DS_Store
-venv
