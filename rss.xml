@@ -3,69 +3,95 @@
 
 <channel>
 <title>Recent posts</title>
-<link>https://simonm3.github.io/makesite/</link>
+<link>https://simonm3/makesite.github.io/makesite/</link>
 
 <item>
-<title>another title</title>
-<link>https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/</link>
+<title>gunship2</title>
+<link>https://simonm3/makesite.github.io/makesite//blog/gunship2.html/</link>
 <description>
 <![CDATA[
 <p>
-&nbsp;<a href="https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/"></a>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//blog/gunship2.html/"></a>
 </p>
-<p><a href="https://simonm3.github.io/makesite//blog/2022-06-03-test1.html/">Read More</a></p>
+<p><a href="https://simonm3/makesite.github.io/makesite//blog/gunship2.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Thu, 09 Jun 2022 00:00:00 +0000</pubDate>
+</item>
+<item>
+<title>test1</title>
+<link>https://simonm3/makesite.github.io/makesite//news/test1.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//news/test1.html/"></a>
+</p>
+<p><a href="https://simonm3/makesite.github.io/makesite//news/test1.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Thu, 09 Jun 2022 00:00:00 +0000</pubDate>
+</item>
+<item>
+<title>another title</title>
+<link>https://simonm3/makesite.github.io/makesite//blog/2022-06-03-test1.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//blog/2022-06-03-test1.html/"></a>
+</p>
+<p><a href="https://simonm3/makesite.github.io/makesite//blog/2022-06-03-test1.html/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Fri, 03 Jun 2022 00:00:00 +0000</pubDate>
 </item>
 <item>
 <title>Mauris Tempor</title>
-<link>https://simonm3.github.io/makesite//news/2018-01-04-mauris-tempor.html/</link>
+<link>https://simonm3/makesite.github.io/makesite//news/2018-01-04-mauris-tempor.html/</link>
 <description>
 <![CDATA[
 <p>
-&nbsp;<a href="https://simonm3.github.io/makesite//news/2018-01-04-mauris-tempor.html/"></a>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//news/2018-01-04-mauris-tempor.html/"></a>
 </p>
-<p><a href="https://simonm3.github.io/makesite//news/2018-01-04-mauris-tempor.html/">Read More</a></p>
+<p><a href="https://simonm3/makesite.github.io/makesite//news/2018-01-04-mauris-tempor.html/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Thu, 04 Jan 2018 00:00:00 +0000</pubDate>
 </item>
 <item>
 <title>Sed Finibus</title>
-<link>https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/</link>
+<link>https://simonm3/makesite.github.io/makesite//blog/2018-01-03-sed-finibus.html/</link>
 <description>
 <![CDATA[
 <p>
-&nbsp;<a href="https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/"></a>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//blog/2018-01-03-sed-finibus.html/"></a>
 </p>
-<p><a href="https://simonm3.github.io/makesite//blog/2018-01-03-sed-finibus.html/">Read More</a></p>
+<p><a href="https://simonm3/makesite.github.io/makesite//blog/2018-01-03-sed-finibus.html/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Wed, 03 Jan 2018 00:00:00 +0000</pubDate>
 </item>
 <item>
 <title>Vivamus Purus</title>
-<link>https://simonm3.github.io/makesite//news/2018-01-02-vivamus-purus.html/</link>
+<link>https://simonm3/makesite.github.io/makesite//news/2018-01-02-vivamus-purus.html/</link>
 <description>
 <![CDATA[
 <p>
-&nbsp;<a href="https://simonm3.github.io/makesite//news/2018-01-02-vivamus-purus.html/"></a>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//news/2018-01-02-vivamus-purus.html/"></a>
 </p>
-<p><a href="https://simonm3.github.io/makesite//news/2018-01-02-vivamus-purus.html/">Read More</a></p>
+<p><a href="https://simonm3/makesite.github.io/makesite//news/2018-01-02-vivamus-purus.html/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Tue, 02 Jan 2018 00:00:00 +0000</pubDate>
 </item>
 <item>
 <title>Proin Quam</title>
-<link>https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/</link>
+<link>https://simonm3/makesite.github.io/makesite//blog/2018-01-01-proin-quam.html/</link>
 <description>
 <![CDATA[
 <p>
-&nbsp;<a href="https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/"></a>
+&nbsp;<a href="https://simonm3/makesite.github.io/makesite//blog/2018-01-01-proin-quam.html/"></a>
 </p>
-<p><a href="https://simonm3.github.io/makesite//blog/2018-01-01-proin-quam.html/">Read More</a></p>
+<p><a href="https://simonm3/makesite.github.io/makesite//blog/2018-01-01-proin-quam.html/">Read More</a></p>
 ]]>
 </description>
 <pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
