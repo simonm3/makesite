@@ -34,6 +34,7 @@ Todo
 ====
 
 * Comments
+* search
 * Testing with notebooks
 
 Issues
