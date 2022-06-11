@@ -41,6 +41,40 @@
 <p>Vivamus egestas justo sed nulla condimentum iaculis. Pellentesque eleifend elementum turpis sed tempus. Aliquam erat volutpat. In hac habitasse platea dictumst. Integer elementum sed diam at vulputate. Donec maximus, lacus a vulputate sagittis, felis turpis vestibulum massa, nec tincidunt libero felis eget arcu. Morbi eget velit vulputate, pellentesque odio laoreet, consequat orci. Aliquam erat volutpat. Nulla a vulputate mi, sed laoreet ipsum. Nulla nunc ipsum, ultricies at suscipit id, consectetur id erat. Suspendisse scelerisque vehicula felis quis luctus.</p>
 <p>Donec posuere ante a nibh dictum suscipit. Mauris interdum dolor nulla, sit amet fermentum quam porta a. Ut metus ipsum, venenatis a lorem pellentesque, finibus commodo turpis. Cras mollis dui quis varius placerat. Phasellus nec nisi nec quam tincidunt luctus. Sed nec vulputate enim, vel dapibus enim. Praesent mollis maximus enim in tempus. Phasellus a arcu lorem. Sed dictum rhoncus tempus.</p>
 
+
+    <div id="graphcomment"></div>
+    <script type="text/javascript">
+
+        /* - - - CONFIGURATION VARIABLES - - - */
+
+        var __semio__params = {
+            graphcommentId: "makesite", // make sure the id is yours
+
+            behaviour: {
+                // HIGHLY RECOMMENDED
+                //  uid: "...", // uniq identifer for the comments thread on your page (ex: your page id)
+            },
+
+            // configure your variables here
+
+        }
+
+        /* - - - DON'T EDIT BELOW THIS LINE - - - */
+
+        function __semio__onload() {
+            __semio__gc_graphlogin(__semio__params)
+        }
+
+
+        (function () {
+            var gc = document.createElement('script'); gc.type = 'text/javascript'; gc.async = true;
+            gc.onload = __semio__onload; gc.defer = true; gc.src = 'https://integration.graphcomment.com/gc_graphlogin.js?' + Date.now();
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(gc);
+        })();
+
+
+    </script>
+
 </article>
     </main>
 

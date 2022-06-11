@@ -41,6 +41,40 @@
 <p>Praesent fringilla dapibus enim quis consectetur. Donec eget nibh nisl. Proin venenatis interdum nunc, sed venenatis orci suscipit in. Morbi sed lacinia tellus, iaculis condimentum tellus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Maecenas sem mi, commodo ut facilisis pharetra, aliquam id nisi. Morbi nec nisi sed tortor faucibus pretium nec non eros. Nullam rhoncus pharetra elementum. Ut tincidunt fermentum metus, at fermentum mi scelerisque id. Aenean sed odio auctor, placerat velit sed, consectetur felis. Donec volutpat id lorem non ornare. Phasellus convallis mi magna, vel laoreet ex efficitur fermentum.</p>
 <p>Phasellus a interdum odio, vitae finibus leo. Pellentesque porta quis massa non suscipit. Mauris finibus vel nibh quis scelerisque. Suspendisse eget molestie lacus, eu mattis felis. Proin ex tellus, ultrices eu facilisis vel, faucibus eget enim. Integer sit amet magna ligula. Ut massa nisl, sodales vel eros ac, dignissim maximus metus. Donec odio nulla, sollicitudin quis dolor in, varius sodales lectus. Sed non lacinia ligula, eu pulvinar eros.</p>
 
+
+    <div id="graphcomment"></div>
+    <script type="text/javascript">
+
+        /* - - - CONFIGURATION VARIABLES - - - */
+
+        var __semio__params = {
+            graphcommentId: "makesite", // make sure the id is yours
+
+            behaviour: {
+                // HIGHLY RECOMMENDED
+                //  uid: "...", // uniq identifer for the comments thread on your page (ex: your page id)
+            },
+
+            // configure your variables here
+
+        }
+
+        /* - - - DON'T EDIT BELOW THIS LINE - - - */
+
+        function __semio__onload() {
+            __semio__gc_graphlogin(__semio__params)
+        }
+
+
+        (function () {
+            var gc = document.createElement('script'); gc.type = 'text/javascript'; gc.async = true;
+            gc.onload = __semio__onload; gc.defer = true; gc.src = 'https://integration.graphcomment.com/gc_graphlogin.js?' + Date.now();
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(gc);
+        })();
+
+
+    </script>
+
 </article>
     </main>
 
