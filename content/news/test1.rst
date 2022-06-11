@@ -128,7 +128,6 @@ And:
 Lists
 =====
 
-Unordered
 ---------
 
 Asterisks tight:

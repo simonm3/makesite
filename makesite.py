@@ -1,5 +1,3 @@
-"""Make static website with Python."""
-
 import os
 import shutil
 import re
@@ -11,6 +9,7 @@ import logging
 
 from tqdm.auto import tqdm
 import pandoc
+from pandoc.types import *
 
 from defaultlog import log
 
@@ -18,82 +17,106 @@ log = logging.getLogger(__name__)
 
 
 def main():
-    # initialise _site
-    if os.path.isdir("_site"):
-        shutil.rmtree("_site")
-    shutil.copytree("static", "_site")
-
     # global context
     gcontext = dict()
     gcontext["site_url"] = os.environ.get("MAKESITE_URL", "http://localhost:8000/")
     gcontext["current_year"] = datetime.now().year
 
-    # create layouts
+    # layouts
     layouts = Layouts()
     layouts.load()
     layouts.build()
 
-    # create pages and indexes
-    cats = create_pages(layouts, gcontext)
-    create_indexes(cats, layouts, gcontext)
+    # site
+    site = Site(gcontext, layouts)
+    site.clear()
+    cats = site.create_pages()
+    site.create_indexes(cats)
 
 
-def create_pages(layouts, gcontext):
-    """ create the content pages. return dict(cat=[meta, ...])"""
-    cats = defaultdict(list)
-    for src in tqdm(
-        [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]
-    ):
-        # copy media files etc..
-        if os.path.splitext(src)[-1] not in pandoc._ext_to_file_format.keys():
-            dst = src.replace("content/", "_site/")
-            os.makedirs(dst, exist_ok=True)
-            shutil.copy(src, dst)
-            continue
+class Site:
+    def __init__(self, gcontext, layouts):
+        self.outpath = "_site"
+        self.gcontext = gcontext
+        self.layouts = layouts
 
-        # convert pages
-        page = Page(src)
-        if os.path.dirname(src) == "content":
-            # root pages
-            page.write(layouts.page, **gcontext)
-        else:
-            # category pages use post layout and add meta to category index.
-            page.write(layouts.post, **gcontext)
-            cats[page.meta["category"]].append(page.meta)
-    return cats
+    def clear(self):
+        if os.path.isdir(self.outpath):
+            shutil.rmtree(self.outpath)
+        shutil.copytree("static", self.outpath)
 
+    def create_pages(self):
+        """ create the content pages. return index by category in format dict(cat=[meta, ...])"""
+        ls = self.layouts
+        cats = defaultdict(list)
+        for src in tqdm(
+            [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]
+        ):
+            # copy media files etc..
+            if os.path.splitext(src)[-1] not in pandoc._ext_to_file_format.keys():
+                dst = src.replace("content/", f"{self.outpath}/")
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy(src, dst)
+                continue
 
-def create_indexes(cats, layouts, gcontext):
-    """ create category index pages and home index """
-    index = Index(layouts)
-    for category, items in cats.items():
-        items = sorted(items, key=lambda item: item["date"], reverse=True)
-        index.write(
-            items, category, **dict(title=category.capitalize(), **gcontext),
+            # convert pages
+            try:
+                page = Page(src)
+            except:
+                log.exception(f"unable to parse {src}")
+                continue
+
+            html = pandoc.write(page.pandoc, format="html")
+            context = dict(self.gcontext, content=html, **page.meta)
+            if os.path.dirname(src) == "content":
+                # root pages
+                self.write(ls.render(ls.page, **context), page.meta["relpath"])
+            else:
+                # category pages use post layout and add meta to category index.
+                self.write(ls.render(ls.post, **context), page.meta["relpath"])
+                cats[page.meta["category"]].append(page.meta)
+        return cats
+
+    def create_indexes(self, cats):
+        """ create category index pages and home index """
+        for category, metas in cats.items():
+            metas = sorted(metas, key=lambda meta: meta["date"], reverse=True)
+            self.create_index(
+                metas, category, **dict(title=category.capitalize(), **self.gcontext),
+            )
+
+        # home index page
+        nposts = 10
+        metas = list(itertools.chain(*cats.values()))
+        metas = sorted(metas, key=lambda meta: meta["date"], reverse=True)[:nposts]
+        self.create_index(
+            metas, "", **dict(title=f"Most recent {nposts} posts", **self.gcontext)
         )
 
-    # home index page
-    items = list(itertools.chain(*cats.values()))
-    items = sorted(items, key=lambda item: item["date"], reverse=True)[:10]
-    index.write(items, "", **dict(title="Recent posts", **gcontext))
+    def create_index(self, metas, path, **context):
+        """Generate index page"""
+        ls = self.layouts
+        rsspath = "/".join([path, "rss.xml"])
 
+        # write index
+        metas_out = [ls.render(ls.item, **dict(context, **meta)) for meta in metas]
+        context = dict(context, content="".join(metas_out), rsspath=rsspath)
+        output = ls.render(ls.list, **context)
+        self.write(output, "/".join([path, "index.html"]))
 
-def fwrite(output, dst):
-    """ write file """
-    dst = f"_site/{dst}"
-    log.debug(f"Writing {dst}")
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    with open(dst, "w") as f:
-        f.write(output)
+        # write rss
+        metas_out = [ls.render(ls.itemxml, **dict(context, **meta)) for meta in metas]
+        context = dict(context, content="".join(metas_out), rsspath=rsspath)
+        output = ls.render(ls.feedxml, **context)
+        self.write(output, rsspath)
 
-
-def render(template, **context):
-    """Replace placeholders in template with values from context."""
-    return re.sub(
-        r"{{\s*([^}\s]+)\s*}}",
-        lambda match: str(context.get(match.group(1), match.group(0))),
-        template,
-    )
+    def write(self, output, dst):
+        """ write file to site """
+        dst = f"{self.outpath}/{dst}"
+        log.debug(f"Writing {dst}")
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, "w") as f:
+            f.write(output)
 
 
 class Page:
@@ -118,11 +141,14 @@ class Page:
         relpath = os.path.relpath(self.path, "content")
         meta["relpath"] = os.path.splitext(relpath)[0] + ".html"
         paths = meta["relpath"].split("/")
-        meta["category"] = paths[0] if len(paths) > 0 else None
+        meta["category"] = paths[0] if len(paths) > 0 else ""
 
         # doc metadata
-        docmeta = {k: pandoc.write(v[0]).strip() for k, v in self.pandoc[0][0].items()}
-        meta.update(docmeta)
+        try:
+            docmeta = self.meta2dict(self.pandoc)
+            meta.update(docmeta)
+        except:
+            log.exception(f"unable to decode metadata for {self.path}")
         meta["rfc_2822_date"] = datetime.strptime(meta["date"], "%Y-%m-%d").strftime(
             "%a, %d %b %Y %H:%M:%S +0000"
         )
@@ -130,12 +156,19 @@ class Page:
 
         return meta
 
-    def write(self, layout, **gcontext):
-        relpath = self.meta["relpath"]
-        html = pandoc.write(self.pandoc, format="html")
-        context = dict(gcontext, content=html, **self.meta)
-        output = render(layout, **context)
-        fwrite(output, relpath)
+    def meta2dict(self, meta):
+        """ recursively convert pandoc metadata to dict """
+        if isinstance(meta, (Pandoc, Meta, MetaMap)):
+            return self.meta2dict(meta[0])
+        elif isinstance(meta, dict):
+            return {k: self.meta2dict(v) for k, v in meta.items()}
+        elif isinstance(meta, MetaInlines):
+            doc = [Para(meta[0])]
+            return pandoc.write(doc).rstrip()
+        elif isinstance(meta, MetaValue):
+            return meta[0]
+
+        raise Exception("Metadata type not found")
 
 
 class Layouts:
@@ -153,33 +186,17 @@ class Layouts:
         cats = [os.path.basename(f) for f in glob("content/*") if os.path.isdir(f)]
         menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats]
         menu = "\n".join(menu)
-        self.page = render(self.page, menu=menu)
-        self.post = render(self.page, content=self.post)
-        self.list = render(self.page, content=self.list)
+        self.page = self.render(self.page, menu=menu)
+        self.post = self.render(self.page, content=self.post)
+        self.list = self.render(self.page, content=self.list)
 
-
-class Index:
-    def __init__(self, layouts):
-        self.layouts = layouts
-
-    def write(self, items, path, **gcontext):
-        """Generate index page"""
-        lay = self.layouts
-        rsspath = "/".join([path, "rss.xml"])
-
-        # write index
-        items_out = [render(lay.item, **dict(gcontext, **item)) for item in items]
-        output = render(
-            lay.list, content="".join(items_out), rsspath=rsspath, **gcontext
+    def render(self, layout, **context):
+        """Replace placeholders in template with values from context."""
+        return re.sub(
+            r"{{\s*([^}\s]+)\s*}}",
+            lambda match: str(context.get(match.group(1), match.group(0))),
+            layout,
         )
-        fwrite(output, "/".join([path, "index.html"]))
-
-        # write rss
-        items_out = [render(lay.itemxml, **dict(gcontext, **item)) for item in items]
-        output = render(
-            lay.feedxml, content="".join(items_out), rsspath=rsspath, **gcontext
-        )
-        fwrite(output, rsspath)
 
 
 if __name__ == "__main__":
