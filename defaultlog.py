@@ -18,7 +18,7 @@ def getlog():
     stream.setFormatter(fmt)
     log.handlers.clear()
     log.addHandler(stream)
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     log.info(f"logging started from {__file__}")
 
     return log
