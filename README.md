@@ -12,8 +12,8 @@ How to use
 * Copy using clone or fork
 * Enable github pages. Under Settings/Pages set source to gh-pages
 2. Setup comments and analytics
-* Create Graphcomment account and set siteid in layout/page.html
-* Create a google analytics account and paste the appropriate code into layout/page.html
+* Create Graphcomment account and set siteid in layout/base.html
+* Create a google analytics account and paste the appropriate code into layout/base.html
 3. Create content in the content folder
 * Add subfolder for each category
 * Add pages and media to the root folder or category folders

@@ -10,6 +10,7 @@ import logging
 from tqdm.auto import tqdm
 import pandoc
 from pandoc.types import *
+from jinja2 import Environment, FileSystemLoader
 
 from defaultlog import log
 
@@ -22,23 +23,24 @@ def main():
     gcontext["site_url"] = os.environ.get("MAKESITE_URL", "http://localhost:8000/")
     gcontext["current_year"] = datetime.now().year
 
-    # layouts
-    layouts = Layouts()
-    layouts.load()
-    layouts.build()
-
     # site
-    site = Site(gcontext, layouts)
+    site = Site(gcontext)
     site.clear()
     cats = site.create_pages()
     site.create_indexes(cats)
 
 
 class Site:
-    def __init__(self, gcontext, layouts):
+    def __init__(self, gcontext):
         self.outpath = "_site"
         self.gcontext = gcontext
-        self.layouts = layouts
+        file_loader = FileSystemLoader("layout")
+        self.env = Environment(loader=file_loader)
+
+        cats = [os.path.basename(f) for f in glob("content/*") if os.path.isdir(f)]
+        menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats]
+        menu = "\n".join(menu)
+        self.gcontext.update(menu=menu)
 
     def clear(self):
         if os.path.isdir(self.outpath):
@@ -47,7 +49,6 @@ class Site:
 
     def create_pages(self):
         """ create the content pages. return index by category in format dict(cat=[meta, ...])"""
-        ls = self.layouts
         cats = defaultdict(list)
         for src in tqdm(
             [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]
@@ -70,11 +71,12 @@ class Site:
             context = dict(self.gcontext, content=html, **page.meta)
             if os.path.dirname(src) == "content":
                 # root pages
-                self.write(ls.render(ls.page, **context), page.meta["relpath"])
+                output = self.render("page.html", **context)
             else:
                 # category pages use post layout and add meta to category index.
-                self.write(ls.render(ls.post, **context), page.meta["relpath"])
+                output = self.render("post.html", **context)
                 cats[page.meta["category"]].append(page.meta)
+            self.write(output, page.meta["relpath"])
         return cats
 
     def create_indexes(self, cats):
@@ -95,19 +97,20 @@ class Site:
 
     def create_index(self, metas, path, **context):
         """Generate index page"""
-        ls = self.layouts
         rsspath = "/".join([path, "rss.xml"])
 
         # write index
-        metas_out = [ls.render(ls.item, **dict(context, **meta)) for meta in metas]
+        metas_out = [
+            self.render("item.html", **dict(context, **meta)) for meta in metas
+        ]
         context = dict(context, content="".join(metas_out), rsspath=rsspath)
-        output = ls.render(ls.list, **context)
+        output = self.render("list.html", **context)
         self.write(output, "/".join([path, "index.html"]))
 
         # write rss
-        metas_out = [ls.render(ls.itemxml, **dict(context, **meta)) for meta in metas]
+        metas_out = [self.render("item.xml", **dict(context, **meta)) for meta in metas]
         context = dict(context, content="".join(metas_out), rsspath=rsspath)
-        output = ls.render(ls.feedxml, **context)
+        output = self.render("feed.xml", **context)
         self.write(output, rsspath)
 
     def write(self, output, dst):
@@ -117,6 +120,9 @@ class Site:
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         with open(dst, "w") as f:
             f.write(output)
+
+    def render(self, template, **context):
+        return self.env.get_template(template).render(**context)
 
 
 class Page:
@@ -169,34 +175,6 @@ class Page:
             return meta[0]
 
         raise Exception("Metadata type not found")
-
-
-class Layouts:
-    def __setitem__(self, k, v):
-        setattr(self, k, v)
-
-    def load(self):
-        for path in glob("layout/*"):
-            name, ext = os.path.splitext(os.path.basename(path))
-            name = name if ext == ".html" else name + ext.lstrip(".")
-            with open(path) as f:
-                self[name] = f.read()
-
-    def build(self):
-        cats = [os.path.basename(f) for f in glob("content/*") if os.path.isdir(f)]
-        menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats]
-        menu = "\n".join(menu)
-        self.page = self.render(self.page, menu=menu)
-        self.post = self.render(self.page, content=self.post)
-        self.list = self.render(self.page, content=self.list)
-
-    def render(self, layout, **context):
-        """Replace placeholders in template with values from context."""
-        return re.sub(
-            r"{{\s*([^}\s]+)\s*}}",
-            lambda match: str(context.get(match.group(1), match.group(0))),
-            layout,
-        )
 
 
 if __name__ == "__main__":
