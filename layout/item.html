@@ -1,12 +1,10 @@
-{% extends "base.html" %}
-
 <article>
-    <h2><a href="{{ relpath }}">{{ title }}</a></h2>
-    <p class="meta">Published on {{ date }}</p>
+    <h2><a href="{{=relpath}}">{{=title}}</a></h2>
+    <p class="meta">Published on {{=date}}</p>
     <p class="summary">
-        {{ summary }}<a class="more" href="{{ relpath }}"></a>
+        {{=summary}}<a class="more" href="{{=relpath}}"></a>
     </p>
     <div>
-        <a class="more" href="{{ relpath }} ">Read More</a>
+        <a class="more" href="{{=relpath}} ">Read More</a>
     </div>
 </article>

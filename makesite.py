@@ -10,11 +10,13 @@ import logging
 from tqdm.auto import tqdm
 import pandoc
 from pandoc.types import *
-from jinja2 import Environment, FileSystemLoader
+from yatl import XML, render
 
 from defaultlog import log
 
 log = logging.getLogger(__name__)
+
+is_pandoc = lambda x: os.path.splitext(x)[-1] in pandoc._ext_to_file_format.keys()
 
 
 def main():
@@ -26,35 +28,43 @@ def main():
     # site
     site = Site(gcontext)
     site.clear()
-    cats = site.create_pages()
-    site.create_indexes(cats)
+    site.create_menu()
+    cat2metas = site.create_pages()
+    site.create_indexes(cat2metas)
 
 
 class Site:
     def __init__(self, gcontext):
         self.outpath = "_site"
         self.gcontext = gcontext
-        file_loader = FileSystemLoader("layout")
-        self.env = Environment(loader=file_loader)
-
-        cats = [os.path.basename(f) for f in glob("content/*") if os.path.isdir(f)]
-        menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats]
-        menu = "\n".join(menu)
-        self.gcontext.update(menu=menu)
 
     def clear(self):
         if os.path.isdir(self.outpath):
             shutil.rmtree(self.outpath)
         shutil.copytree("static", self.outpath)
 
+    def create_menu(self):
+        cats = [os.path.basename(f) for f in glob("content/*") if os.path.isdir(f)]
+        pages = [
+            os.path.basename(os.path.splitext(f)[0])
+            for f in glob("content/*")
+            if os.path.isfile(f) and is_pandoc(f) and not f.startwith("index.")
+        ]
+
+        menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats] + [
+            f"<a href={page}.html>{page.capitalize()}</a>" for page in pages
+        ]
+        menu = "\n".join(menu)
+        self.gcontext.update(menu=XML(menu))
+
     def create_pages(self):
         """ create the content pages. return index by category in format dict(cat=[meta, ...])"""
-        cats = defaultdict(list)
+        cat2metas = defaultdict(list)
         for src in tqdm(
             [f for f in glob("content/**", recursive=True) if os.path.isfile(f)]
         ):
             # copy media files etc..
-            if os.path.splitext(src)[-1] not in pandoc._ext_to_file_format.keys():
+            if os.path.splitext(src)[-1] and not is_pandoc(src):
                 dst = src.replace("content/", f"{self.outpath}/")
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(src, dst)
@@ -68,20 +78,25 @@ class Site:
                 continue
 
             html = pandoc.write(page.pandoc, format="html")
-            context = dict(self.gcontext, content=html, **page.meta)
+            context = dict(self.gcontext, content=XML(html), **page.meta)
             if os.path.dirname(src) == "content":
                 # root pages
-                output = self.render("page.html", **context)
+                output = self.render("page.html", context)
             else:
                 # category pages use post layout and add meta to category index.
-                output = self.render("post.html", **context)
-                cats[page.meta["category"]].append(page.meta)
+                output = self.render("post.html", context)
+                cat2metas[page.meta["category"]].append(page.meta)
             self.write(output, page.meta["relpath"])
-        return cats
 
-    def create_indexes(self, cats):
+        # move extracted media files
+        os.makedirs("media", exist_ok=True)
+        shutil.move("media", "_site/media")
+
+        return cat2metas
+
+    def create_indexes(self, cat2metas):
         """ create category index pages and home index """
-        for category, metas in cats.items():
+        for category, metas in cat2metas.items():
             metas = sorted(metas, key=lambda meta: meta["date"], reverse=True)
             self.create_index(
                 metas, category, **dict(title=category.capitalize(), **self.gcontext),
@@ -89,7 +104,7 @@ class Site:
 
         # home index page
         nposts = 10
-        metas = list(itertools.chain(*cats.values()))
+        metas = list(itertools.chain(*cat2metas.values()))
         metas = sorted(metas, key=lambda meta: meta["date"], reverse=True)[:nposts]
         self.create_index(
             metas, "", **dict(title=f"Most recent {nposts} posts", **self.gcontext)
@@ -100,17 +115,15 @@ class Site:
         rsspath = "/".join([path, "rss.xml"])
 
         # write index
-        metas_out = [
-            self.render("item.html", **dict(context, **meta)) for meta in metas
-        ]
-        context = dict(context, content="".join(metas_out), rsspath=rsspath)
-        output = self.render("list.html", **context)
+        items = [self.render("item.html", dict(context, **meta)) for meta in metas]
+        context = dict(context, content=XML("".join(items)), rsspath=rsspath)
+        output = self.render("list.html", context)
         self.write(output, "/".join([path, "index.html"]))
 
         # write rss
-        metas_out = [self.render("item.xml", **dict(context, **meta)) for meta in metas]
-        context = dict(context, content="".join(metas_out), rsspath=rsspath)
-        output = self.render("feed.xml", **context)
+        items = [self.render("item.xml", dict(context, **meta)) for meta in metas]
+        context = dict(context, content=XML("".join(items)), rsspath=rsspath)
+        output = self.render("feed.xml", context)
         self.write(output, rsspath)
 
     def write(self, output, dst):
@@ -121,8 +134,8 @@ class Site:
         with open(dst, "w") as f:
             f.write(output)
 
-    def render(self, template, **context):
-        return self.env.get_template(template).render(**context)
+    def render(self, template, context):
+        return render(filename=f"layout/{template}", context=context)
 
 
 class Page:
@@ -132,7 +145,12 @@ class Page:
         self.meta = self.getmeta()
 
     def read(self):
-        return pandoc.read(file=self.path)
+        options = []
+        if self.path.endswith(".docx"):
+            # example image => "media/blog/xyz.docx/media/image1.jpg"
+            relpath = os.path.relpath(self.path, "content")
+            options.extend(["--extract-media", f"media/{relpath}"])
+        return pandoc.read(file=self.path, options=options)
 
     def getmeta(self):
         meta = dict()

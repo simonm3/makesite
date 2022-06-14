@@ -1,12 +1,10 @@
-{% extends "base.html" %}
+{{ extend "layout/base.html" }}
 
-{% block content %}
 <article>
-    <h1><a href="{{ relpath }}">{{ title }}</a></h1>
-    <p class="meta">Published on {{ date }}</p>
-    {{ content }}
+    <h1><a href="{{=relpath}}">{{=title}}</a></h1>
+    <p class="meta">Published on {{=date}}</p>
+    {{=content}}
 
-    {% include "graphcomment.html" %}
+    {{include "layout/graphcomment.html"}}
 
 </article>
-{% endblock %}
