@@ -6,6 +6,19 @@
 <link>https://simonm3.github.io/makesite/</link>
 
 <item>
+<title>An example of a complex pipeline using Prefect 2 (Orion)</title>
+<link>https://simonm3.github.io/makesite//blog/prefect2.html/</link>
+<description>
+<![CDATA[
+<p>
+&nbsp;<a href="https://simonm3.github.io/makesite//blog/prefect2.html/"></a>
+</p>
+<p><a href="https://simonm3.github.io/makesite//blog/prefect2.html/">Read More</a></p>
+]]>
+</description>
+<pubDate>Wed, 15 Jun 2022 00:00:00 +0000</pubDate>
+</item>
+<item>
 <title>gunship2</title>
 <link>https://simonm3.github.io/makesite//blog/gunship2.html/</link>
 <description>
@@ -16,7 +29,7 @@
 <p><a href="https://simonm3.github.io/makesite//blog/gunship2.html/">Read More</a></p>
 ]]>
 </description>
-<pubDate>Tue, 14 Jun 2022 00:00:00 +0000</pubDate>
+<pubDate>Wed, 15 Jun 2022 00:00:00 +0000</pubDate>
 </item>
 <item>
 <title>another title</title>

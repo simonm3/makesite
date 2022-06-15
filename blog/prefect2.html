@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>An example of a complex pipeline using Prefect 2 (Orion)</title>
+    <base href="https://simonm3.github.io/makesite/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZG65DD0JD1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-ZG65DD0JD1');
+</script>
+</head>
+
+<body id="An example of a complex pipeline using Prefect 2 (Orion)">
+    <nav>
+        <section>
+            <span class="home">
+                <a href="">Home</a>
+            </span>
+            <span class="links">
+                <a href=blog>Blog</a>
+<a href=news>News</a>
+<a href=index.html>Index</a>
+<a href=contact.html>Contact</a>
+<a href=about.html>About</a>
+            </span>
+        </section>
+        <!-- <script async src="https://cse.google.com/cse.js?cx=012635547420020838931:yno48jvuz90">
+</script>
+<div class="gcse-search"></div> -->
+
+    </nav>
+
+    <main>
+        
+
+<article>
+    <h1><a href="blog/prefect2.html">An example of a complex pipeline using Prefect 2 (Orion)</a></h1>
+    <p class="meta">Published on 2022-06-15</p>
+    <h1 id="introduction">Introduction</h1>
+<h2 id="overview">Overview</h2>
+<p>This article offers an introduction to pipeline management using Prefect2. This software has recently been launched in experimental mode but has the potential to be a step change over other pipeline management tools.</p>
+<p>For illustration I will use an existing application which has a complex pipeline with multiple steps, nested loops, the need for warm restarts and many other features. It has been running successfully using Luigi for four years.</p>
+<p>The focus of this article is on the pipeline management aspects of the project rather than the data science.</p>
+<h2 id="pipeline-management">Pipeline Management</h2>
+<p>There are a number of objectives for a good pipeline management tool:</p>
+<ol type="1">
+<li><p>Separate the pipeline management from core code that does the heavy lifting</p></li>
+<li><p>Execute tasks in parallel potentially on different machines</p></li>
+<li><p>Provide a UI to monitor all the jobs, flows and tasks</p></li>
+<li><p>Restart pipelines without rerunning successful tasks</p></li>
+<li><p>Cope with normal programming control structures such as loops, nested loops and conditional execution.</p></li>
+<li><p>Addition of new tasks dynamically during the flow</p></li>
+</ol>
+<p>There are dozens of pipeline management tools available. None meet all of the above objectives.</p>
+<ul>
+<li><p>They tend to use a two step process of creating a DAG then executing. This makes it harder to debug and to create tasks dynamically without jumping through hoops.</p></li>
+<li><p>They are generally quite intrusive requiring code to be rewritten in a specific way so the pipeline management is dictating the whole project rather than a separate component</p></li>
+<li><p>The core of pipeline management should be point 5 above. Yet it seems that for most pipeline management packages these control structures require a completely new syntax.</p></li>
+</ul>
+<p>An iniital look at prefect2 suggests it used normal python code to implement loops and control structures; has no DAG; and is unintrusive to existing code.</p>
+<h1 id="target-application">Target application</h1>
+<p>The target application creates an electronic record of who voted at an election. This is useful to help prioritise election campaigns. If we have limited resources then we want to focus on those who voted in the last five elections above those that were eligible but never voted. Surprisingly this information is only available on paper.</p>
+<p>The electoral register is a database of all registered voters. At elections this is printed out and each polling station manually checks off electors as they arrive on these paper copies. This creates what is known as the “marked register”.</p>
+<p>After the election these marked register pages are scanned into electronic image files. Typically each consituency has 100K voters split across 100 polling stations. The marked register for a constituency consists of around 100 pdfs of 10 pages and 100 voters per page. This is repeated across 600 constituencies. An example of the paper sheets is shown below:</p>
+<p>EXAMPLE OF IMAGE</p>
+<p><img src="media/blog/prefect2.docx/media/image1.png" alt="Text Description automatically generated" style="width:6.26806in;height:3.06319in" />We have working functions that extract the data we want from the scanned pages and match it to the database. These apply a wide range of data science techniques such as OCR, clustering, deep learning, text vectorizing and sequence alignment. However these will not be covered here as this article is focused on pipeline manaagement</p>
+<ul>
+<li><p>Each function will be applied multiple times to different pdfs, pages and voters</p></li>
+<li><p>Much of this is embarassingly parallel</p></li>
+<li><p>It needs to be robust to failure. If one page fails then we don’t want to reject the pdf. If one pdf fails then we still want to process all the other pdfs.</p></li>
+</ul>
+<p>WITH LIGHT THEMEt</p>
+<p>class Page:</p>
+<p>    def __init__(self, path):</p>
+<p>        self.path = path</p>
+<p>        self.pandoc = self.read()</p>
+<p>        self.meta = self.getmeta()</p>
+<h1 id="jobflow-without-pipeline-management">Jobflow without pipeline management</h1>
+<p>The data for a single job includes a csv with a list of voters and a set of pdfs with image scans representing the same voters.</p>
+<p>The code below shows the steps to extract the data for all the pages ready for feeding into the model:</p>
+<p>def jobflow(jobid):</p>
+<p>downloaded = pretasks.download(jobid)</p>
+<p>csv = pretasks.create_csv()</p>
+<p>all_matched = []</p>
+<p>    for pdf in glob("*.pdf"):</p>
+<p>       pdf_pages = pdftasks.get_pages(pdf)</p>
+<p>       for png in pdf_pages:</p>
+<p>            rotated = pngtasks.rotate(png, config)</p>
+<p>            boxes = pngtasks.OCR(rotated, config)</p>
+<p>            parsed = pngtasks.parse(boxes)</p>
+<p>            matched = pngtasks.match(parsed, csv)</p>
+<p>            all_matched.append(matched)</p>
+<p>return all_matched, csv</p>
+<p>This is easy to read but each page will be processed in sequence on a single processor. If we have 8 processors then it would be better to process eight pages in parallel then to merge it all together at the end.</p>
+<p>Also if there is any failure the job will fail. One unreadable page should not make the whole job fail. If we have 20K pages there will almost certainly be some failures. Rather than failing we want to log problems and measure the output. If 99% of pages are processed that may be good enough. Alternatively we might decide to investigate failures in which case we want to rerun only the tasks that have failed not those for the 19,800 pages that succeeded.</p>
+<h1 id="implementing-the-target-application-in-prefect2">Implementing the target application in Prefect2</h1>
+<h2 id="quick-start">Quick start</h2>
+<p>To adapt the above code for prefect2 is really simple:</p>
+<ul>
+<li><p>Decorate the jobflow function with @flow(task_runner=DaskTaskRunner())</p></li>
+<li><p>Decorate the pngtasks with an @task decorator</p></li>
+</ul>
+<p>Now when jobflow is run it sets up a dask cluster; and any @task functions in the @flow function are submitted to the dask cluster and return a future. The future is like a reference to the task. This allows us to find out the state of the task and to obtain the result once it is complete.</p>
+<p>Dependencies between tasks are handled automatically by passing the futures as parameters. The downstream task will wait until their input futures complete before executing. This means there is no need to separately define links between tasks.</p>
+<p>Prefect2 has enabled parallelisation and resilience to failure with minimal change to the code.</p>
+<h2 id="configuring-dask">Configuring dask</h2>
+<p>Typically no configuration is necessary. There is a dask dashboard on port 8787 that shows detailed information on cpu and memory usage by worker.</p>
+<p>In this case the dask dashboard shows only 4 workers. The reason is that prefect sets the default number of workers to the number of physical CPUs. My laptop has 8 vCPUs so it may be faster to set n_workers=8. If I do this it then the log shows a number of memory usage warnings. The reason for that is that memory is divided equally between the workers and 1/8 of the memory is not sufficent for some tasks. Therefore finally I set n_workers=6.</p>
+<h2 id="adding-pretasks">Adding pretasks</h2>
+<p>There are several tasks that need to be executed sequentially at the start of the job. Whilst these cannot run in parallel there are benefits to adding these to the managed pipeline. This would provide a unified view of task failures and timings; make it easier to restart; and easier to adapt.</p>
+<p>Just adding the @task decorator these tasks would be carried out in parallel. Unlike the pngtasks there is no data passed between them to indicate dependencies so they won’t wait automatically. Instead we use the special parameter wait_for e.g. create_csv(wait_for=[download]); or call the wait method e.g. download.wait().</p>
+<p>In the case of get_pages we also want to iterate over the result directly in the flow. The wait method returns a State object so we need to call get_pages().wait().result() to get the list of pages. After maiking all these changes the code looks like this:</p>
+<p>@flow(task_runner=DaskTaskRunner(cluster_kwargs=dict(n_workers=6)))</p>
+<p>def jobflow(jobid):</p>
+<p>    downloaded = pretasks.download(jobid)</p>
+<p>    downloaded.wait()</p>
+<p>    csv = pretasks.create_csv().wait().result()</p>
+<p>    all_matched = []</p>
+<p>    for pdf in glob("*.pdf"):</p>
+<p>        pdf_pages = pdftasks.get_pages(pdf).wait().result()</p>
+<p>        pdf_pages = pdf_pages():</p>
+<p>        for i, png in enumerate(pdf_pages):</p>
+<p>            rotated = pngtasks.rotate(png, config)</p>
+<p>            boxes = pngtasks.OCR(rotated, config)</p>
+<p>            parsed = pngtasks.parse(boxes)</p>
+<p>            matched = pngtasks.match(parsed, csv)</p>
+<p>            all_matched.append(matched)</p>
+<p>return all_matched, csv</p>
+<h2 id="adding-posttasks">Adding posttasks</h2>
+<p>The jobflow above returns all_matched (list of futures) and csv (future). The tasks after this will merge all_matched into a single dataframe and then merge it into the csv..</p>
+<p>The merging steps are primarily carried out in sequence not in parallel. At the same time they are processing more data so require more memory. The Dask cluster would not be appropriate as we would only be using one of the CPUs and have access to 1/6 of the memory. Using the SequentialTaskRunner() executes these on a single processor with 100% of the memory.</p>
+<p>The “predict” step uses machine learning to make predictions. Pytorch uses MKL to utilise multiple processors for prediction so does not require Dask. Trying to use MKL and Dask to manage multiprocessing would lead to conflicts.</p>
+<p>For these reasons the posttasks are put in a separate flow using the SequentialTaskRunner:</p>
+<p>@flow(task_runner=SequentialTaskRunner())</p>
+<p>def mergeflow(s3path, matched, csv):</p>
+<p>matched = [v.wait().result() for v in matched]</p>
+<p>    merged = posttasks.merge(*matched)</p>
+<p>    csvonly_out = posttasks.csvonly(merged, csv)</p>
+<p>    data = posttasks.prepare_data(merged)</p>
+<p>    preds = posttasks.predict(data)</p>
+<p>    output = posttasks.create_output(csv, merged, preds)</p>
+<p>    posttasks.upload(s3path, wait_for=[output, csvonly_out])</p>
+<h1 id="comparison-with-luigi">Comparison with Luigi</h1>
+<p>In luigi to create a task you need to create a Task class; incorporate the function into the run method; override other methods as required; and create a Parameter class for each parameter. The whole project has to be structured for luigi. By contrast in prefect2 you just add the @task decorator. No changes are required to code. This makes it simpler and also enables unit testing independently of pipeline management.</p>
+<p>In luigi there is a DAG. You can have a loop inside a task which creates new tasks using the yield statement but this is a hack that feels awkward and is hard to read later. In prefect2 there is no DAG and you can use a python loop that creates new tasks at runtime.</p>
+<p>Luigi runs everything together on one machine. In prefect2 the scheduler and UI run in a separate process, container or machine; there is a range of flow runners such as kubernetes or docker; and mutliple task runners for execution including Dask and Ray.</p>
+<p>Overall prefect2 uses a much more straightforward approach that meets most of the goals of pipeline management.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>This article has shown an example of how Prefect2 can be used to create a complex pipeline.</p>
+<p>A pipeline manager’s main purpose is to manage all the standard control flows with conditions and loops. This functionality sounds a lot like the definition of “programming” so it is surprising that most pipeline tools invent their own syntax. Prefect2 uses standard python which is refreshing. It also stays out of the way. The pipeline code is completely separate to core functionality.</p>
+<p>There are still some issues. Prefect2 is still “experimental”. There are bugs. There are holes in the documentation. There are some things that could be improved. However the core functionality is working and it can only improve. Likely will be production ready later this year.</p>
+<p>There is one feature required for this project that is not handled by prefect2 and that is for the pipeline to work similarly to makefile, saving files at each stage, launching tasks only if they are not already complete. This is not part of prefect2 nor on the roadmap. Prefect2 does have caching but this seems opaque and over-complex. Hopefully it will improve.</p>
+<p>Until that happens perhaps we can extend prefect2? I will cover this in part 2.</p>
+<p>Extending prefect2 to implement makefile like functionality</p>
+<h1 id="introduction-1">Introduction</h1>
+<p>This article shows how to extend prefect2 to implement makefile functionality. It is also illustrative of the extent to which prefect2 can be adapted to other bespoke requirements.</p>
+<p>As outlined in the previous article my application processes a large number of images of text to extract information. This requires going through a number of steps to transform each image.</p>
+<p>When the application was developed it was easy to get it working with data from a single town. However each town generates data independently. Whilst the aim is the same the data can vary in a myriad of ways. We have no control over the quality or format of their data nor do we have a representative sample that covers all the possible variations.</p>
+<p>This made development iterative. Each new town generated some failures which were fixed as discovered. There could be thousands of pages that work then a few that don’t. For each iteration we want to only run the pages and tasks that previously failed without repeating those that were successful already.</p>
+<h1 id="prefect2-way-of-working">Prefect2 way of working</h1>
+<p>Prefect works quite well for defining flows and handling restarts. It can also cache results in the file system. So at first glance it should handle a makefile like approach well but…</p>
+<h2 id="prefect-works-top-down">Prefect works top down</h2>
+<p>It starts with the first task in each flow. So even if the task does not need to be run it gets sent to the scheduler and is reported as cached. This may be a small amount of unnecessary work but it becomes an issue with thousands of tasks. If I have 100K tasks and 1 failed then I only want the one that failed to run.</p>
+<p>Luigi works bottom up. It looks at the upstream dependencies and if they are available already the task will run. If they are not available it will move upstream to run what is needed only.</p>
+<h2 id="prefect-cache-is-hidden">Prefect cache is hidden</h2>
+<p>Prefect2 provides the name for the cache file but this cannot be user defined nor templated for specific inputs. The name of the cache file is stored in the database but in a particularly cryptic way and is not easily accessible. You cannot easily view the cache nor delete parts of the cache to force a rerun. The only way to force a rerun is delete the whole cache otherwise if the cached file exists then it will be used.</p>
+<p>If I carry out OCR on image1 I want to store the result as OCR/image1. Then I can easily use file explorer to see what has been completed and view the output for a specific step/image. I can also force a task to rerun by deleting the appropriate output files.</p>
+<p>Sometimes I want the task to store the output rather than returning it for storing.</p>
+<h1 id="adapting-prefect2-for-makefile">Adapting prefect2 for makefile</h1>
+<h2 id="why-not-just-do-it-a-different-way">Why not just do it a different way?</h2>
+<p>This might be possible. However:</p>
+<ol type="1">
+<li><p>I am porting an existing application and want to replicate the outputs exactly to fit with existing tools and to enable easy testing and comparison of outputs.</p></li>
+<li><p>My development approach has worked well for a number of similar projects. I don’t see an alternative that would work as well with the type of projects I do.</p></li>
+<li><p>Regardless It is useful to see how easy it is to adapt Prefect2 because no package meets all needs all of the time</p></li>
+</ol>
+<h2 id="extra-parameters-for-task">Extra parameters for @task</h2>
+<p>I want to provide a parameter for @task to add a target output path. This will be a template that can be filled at execution time using context variables such as taskname and inputs to the task.</p>
+<p>Would be useful for the template to act like a python formatstring i.e. include code. Any functions would need to be defined at runtime so it will be a limited list e.g. os.path, datetime.</p>
+<p>To enable this to be filled at runtime means overriding Task.__init__ and Task.__call__. In this way we can intercept calls where output is complete and bypass the scheduler.</p>
+<p>Skipped tasks return a Skipped object. The skipped object implement methods such as wait and result but is not a Future. These are converted into data when used as parameters to another task.</p>
+<h2 id="autosaving-and-autoloading-files">Autosaving and autoloading files</h2>
+<p>When a task returns data I want this to be saved and replaced by a path. When this path is used a a parameter I want it loaded as data.</p>
+<p>It is useful for debugging to save interim outputs. This allows you to iterate over selected outputs to check it is as expected. Where outputs are large it is preferable to avoid keeping them in memory or passing them between processes and machines. In these cases better to pass paths to data rather than data itself.</p>
+<h1 id="appendix">Appendix</h1>
+<p>FOCUS ON PIPELINE ONLY</p>
+<p>There are a number of issues which add to the complexity:</p>
+<ul>
+<li><p>Pdfs</p>
+<ul>
+<li><p>Can be one pdf for 100 polling stations or two pdfs for 1 polling station</p></li>
+<li><p>We have no control over the source data. It is what it is.</p></li>
+<li><p>There are multiple systems used by different areas with variations in format</p></li>
+</ul></li>
+<li><p>Pages</p>
+<ul>
+<li><p>Quality of scan can vary. Sometimes very poor using 1960s scanner</p></li>
+<li><p>Can be rotated 90/180. Can have smaller rotations and creases.</p></li>
+<li><p>Some pages contain no voters or are blank</p></li>
+<li><p>Can contain 1, 2 or 3 block columns of voters</p></li>
+</ul></li>
+<li><p>Voters</p>
+<ul>
+<li><p>The columns of data are nor distinct and can run into each other</p></li>
+<li><p>Many are crossed out by the system because they are not eligible to vote</p></li>
+<li><p>Some are crossed out to indicate they voted</p></li>
+<li><p>Crossed out letters cannot be read perfectly by OCR</p></li>
+<li><p>Crossings out make any distinction between data columns difficult</p></li>
+</ul></li>
+<li><p>Matching</p>
+<ul>
+<li><p>A voter can be on the electronic record but not on the printed page; or vice versa. This is due to timing differences.</p></li>
+</ul></li>
+</ul>
+
+
+    <div id="graphcomment"></div>
+<script type="text/javascript">
+
+    /* - - - CONFIGURATION VARIABLES - - - */
+
+    var __semio__params = {
+        graphcommentId: "makesite", // make sure the id is yours
+
+        behaviour: {
+            // HIGHLY RECOMMENDED
+            //  uid: "...", // uniq identifer for the comments thread on your page (ex: your page id)
+        },
+
+        // configure your variables here
+
+    }
+
+    /* - - - DON'T EDIT BELOW THIS LINE - - - */
+
+    function __semio__onload() {
+        __semio__gc_graphlogin(__semio__params)
+    }
+
+
+    (function () {
+        var gc = document.createElement('script'); gc.type = 'text/javascript'; gc.async = true;
+        gc.onload = __semio__onload; gc.defer = true; gc.src = 'https://integration.graphcomment.com/gc_graphlogin.js?' + Date.now();
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(gc);
+    })();
+
+
+</script>
+
+</article>
+    </main>
+
+    <footer>
+        <section>
+            <p>&copy; 2022 Simon Mackenzie</p>
+            <p>
+                <a href="https://www.linkedin.com/in/simon-mackenzie-4b902b6/">LinkedIn</a>
+                <a href="https://github.com/simonm3">GitHub</a>
+            </p>
+        </section>
+    </footer>
+
+</body>
+
+</html>
