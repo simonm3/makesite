@@ -48,7 +48,7 @@ class Site:
         pages = [
             os.path.basename(os.path.splitext(f)[0])
             for f in glob("content/*")
-            if os.path.isfile(f) and is_pandoc(f) and not f.startwith("index.")
+            if os.path.isfile(f) and is_pandoc(f) and not f.startswith("index.")
         ]
 
         menu = [f"<a href={cat}>{cat.capitalize()}</a>" for cat in cats] + [
